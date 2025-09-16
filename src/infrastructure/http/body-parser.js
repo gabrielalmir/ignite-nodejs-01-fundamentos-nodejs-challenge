@@ -9,7 +9,7 @@ export async function parseRequestBody(request) {
         const parsed = JSON.parse(body);
         resolve(parsed);
       } catch {
-        resolve(null);
+        resolve({});
       }
     });
   });
