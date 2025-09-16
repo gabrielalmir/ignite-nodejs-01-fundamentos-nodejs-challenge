@@ -50,7 +50,7 @@ export class LunaDB {
   }
 
   listAll() {
-    return this.#index.values();
+    return Array.from(this.#index.values());
   }
 
   async compact() {
