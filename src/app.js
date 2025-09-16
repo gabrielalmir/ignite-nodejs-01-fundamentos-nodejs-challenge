@@ -38,6 +38,30 @@ export async function main({ host, port }, cb) {
     res.json(tasks);
   });
 
+  app.put("/tasks/:id", async (req, res) => {
+    const { id } = req.params;
+    const { title, description } = req.body;
+
+    const task = await taskService.findById(id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    if (!title && !description) {
+      res.status(400).json({ error: 'Title or description must be provided' });
+      return;
+    }
+
+    if (title) task.title = title;
+    if (description) task.description = description;
+    task.updated_at = new Date();
+
+    await taskService.update(task);
+    res.json(task);
+  });
+
   const server = http.createServer((req, res) => app.route(req, res));
   server.listen(port, host, cb);
 }

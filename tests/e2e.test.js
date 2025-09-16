@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { spawn } from 'node:child_process';
 import { existsSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { after, before, describe, it } from 'node:test';
+import { after, before, beforeEach, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -234,6 +234,85 @@ describe('E2E Tests - Task API', () => {
       });
 
       assert.ok(response.status >= 400);
+    });
+  });
+
+  describe('PUT /tasks/:id', () => {
+    let createdTask;
+
+    beforeEach(async () => {
+      const response = await fetch(`${BASE_URL}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Task to update', description: 'Desc' })
+      });
+      createdTask = await response.json();
+    });
+
+    it('should update task title and description', async () => {
+      const updated = { title: 'Updated Title', description: 'Updated Desc' };
+      const response = await fetch(`${BASE_URL}/tasks/${createdTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+
+      assert.strictEqual(response.status, 200);
+      const task = await response.json();
+
+      assert.strictEqual(task.title, updated.title);
+      assert.strictEqual(task.description, updated.description);
+      assert.ok(task.updated_at);
+    });
+
+    it('should update only the title', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/${createdTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Only Title' })
+      });
+
+      assert.strictEqual(response.status, 200);
+      const task = await response.json();
+      assert.strictEqual(task.title, 'Only Title');
+      assert.strictEqual(task.description, 'Desc');
+    });
+
+    it('should update only the description', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/${createdTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'Only Desc' })
+      });
+
+      assert.strictEqual(response.status, 200);
+      const task = await response.json();
+      assert.strictEqual(task.title, 'Task to update');
+      assert.strictEqual(task.description, 'Only Desc');
+    });
+
+    it('should return 400 if neither title nor description is provided', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/${createdTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      assert.strictEqual(response.status, 400);
+      const data = await response.json();
+      assert.strictEqual(data.error, 'Title or description must be provided');
+    });
+
+    it('should return 404 if task does not exist', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/non-existent-id`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Does not matter' })
+      });
+
+      assert.strictEqual(response.status, 404);
+      const data = await response.json();
+      assert.strictEqual(data.error, 'Task not found');
     });
   });
 });

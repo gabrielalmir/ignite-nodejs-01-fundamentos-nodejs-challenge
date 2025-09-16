@@ -2,20 +2,17 @@ import { parseRequestBody } from "./body-parser.js";
 import { Path } from "./path.js";
 
 export class Router {
-  #routes;
-
-  constructor() {
-    this.#routes = new Map();
-  }
+  #routes = [];
+  #separator = '@';
 
   add(method, endpoint, handler) {
-    const routeIdentifier = `${method}:${endpoint}`;
+    const routeIdentifier = `${method}${this.#separator}${endpoint}`;
 
-    if (this.#routes.has(routeIdentifier)) {
+    if (this.#routes.find(r => r.method === method && r.endpoint === endpoint)) {
       throw new Error(`Route ${routeIdentifier} already exists`);
     }
 
-    this.#routes.set(routeIdentifier, { method, endpoint, handler });
+    this.#routes.push({ method, endpoint, handler });
   }
 
   async route(request, response) {
@@ -23,8 +20,8 @@ export class Router {
 
     const protocol = request.connection.encrypted ? 'https' : 'http';
     const requestUrl = new URL(url, `${protocol}://${request.headers.host}`);
-    const routeIdentifier = `${method}:${requestUrl.pathname}`;
-    const route = this.#routes.get(routeIdentifier);
+
+    const route = this.#routes.find(r => r.method === method && new Path().isMatch(r.endpoint, requestUrl.pathname));
 
     response.status = (status) => this.status(response, status);
     response.json = (data) => this.json(response, data);
