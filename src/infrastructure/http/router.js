@@ -21,7 +21,9 @@ export class Router {
   async route(request, response) {
     const { method, url } = request;
 
-    const routeIdentifier = `${method}:${new URL(url, `http://${request.headers.host}`).pathname}`;
+    const protocol = request.connection.encrypted ? 'https' : 'http';
+    const requestUrl = new URL(url, `${protocol}://${request.headers.host}`);
+    const routeIdentifier = `${method}:${requestUrl.pathname}`;
     const route = this.#routes.get(routeIdentifier);
 
     if (!route) {
@@ -35,12 +37,19 @@ export class Router {
     const body = await parseRequestBody(request);
 
     try {
-      response.addHeader('Content-Type', 'application/json');
+      response.json = (data) => this.json(response, data);
+      response.setHeader('Content-Type', 'application/json');
       await route.handler({ params, query, body }, response);
     } catch (error) {
+      console.error('Error handling request:', error);
       response.writeHead(500, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: 'Internal server error' }));
     }
+  }
+
+  json(response, data) {
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify(data));
   }
 
   get(endpoint, handler) {

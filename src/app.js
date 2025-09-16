@@ -10,7 +10,7 @@ export async function main({ host, port }, cb) {
   await db.load();
 
   app.get("/", (req, res) => {
-    res.end("Hello, World!");
+    res.json({ message: "Hello, World!"})
   });
 
   const server = http.createServer((req, res) => app.route(req, res));
