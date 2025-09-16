@@ -26,9 +26,11 @@ export class Router {
     const routeIdentifier = `${method}:${requestUrl.pathname}`;
     const route = this.#routes.get(routeIdentifier);
 
+    response.status = (status) => this.status(response, status);
+    response.json = (data) => this.json(response, data);
+
     if (!route) {
-      response.writeHead(404, { 'Content-Type': 'application/json' });
-      response.end(JSON.stringify({ error: 'Route not found' }));
+      response.status(404).json({ error: 'Route not found' });
       return;
     }
 
@@ -37,14 +39,17 @@ export class Router {
     const body = await parseRequestBody(request);
 
     try {
-      response.json = (data) => this.json(response, data);
-      response.setHeader('Content-Type', 'application/json');
       await route.handler({ params, query, body }, response);
     } catch (error) {
       console.error('Error handling request:', error);
       response.writeHead(500, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: 'Internal server error' }));
     }
+  }
+
+  status(response, status) {
+    response.statusCode = status;
+    return response;
   }
 
   json(response, data) {

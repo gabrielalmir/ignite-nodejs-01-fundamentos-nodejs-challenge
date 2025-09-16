@@ -16,23 +16,21 @@ export async function main({ host, port }, cb) {
   await db.load();
 
   app.get("/", (req, res) => {
-    res.json({ status: 'ok' })
+    res.json({ status: 'ok' });
   });
 
   app.post("/tasks", async (req, res) => {
     const { title, description } = req.body;
 
     if (!title || !description) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Title and description are required' }));
+      res.status(400).json({ error: 'Title and description are required' });
       return;
     }
 
     const task = Task.create({ title, description });
     await taskService.create(task);
 
-    res.writeHead(201, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(task));
+    res.status(201).json(task);
   });
 
   app.get("/tasks", async (req, res) => {

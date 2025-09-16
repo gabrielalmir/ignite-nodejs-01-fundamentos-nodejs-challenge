@@ -11,7 +11,8 @@ export class TaskRepository {
   }
 
   async findAll() {
-    return this.#db.listAll();
+    const allData = this.#db.listAll();
+    return allData.map((data) => JSON.parse(data));
   }
 
   async findById(id) {
