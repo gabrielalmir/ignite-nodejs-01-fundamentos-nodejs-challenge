@@ -23,7 +23,7 @@ Uma API REST simples para gerenciamento de tarefas, desenvolvida como desafio do
 
 ## 📋 Pré-requisitos
 
-- Node.js (versão 18 ou superior)
+- Node.js (versão 20 ou superior)
 - npm ou yarn
 
 ## 🔧 Instalação
