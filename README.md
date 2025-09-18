@@ -1,5 +1,7 @@
 # Ignite Node.js - Fundamentos Challenge
 
+[![CI](https://github.com/gabrielalmir/ignite-nodejs-01-fundamentos-nodejs-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/gabrielalmir/ignite-nodejs-01-fundamentos-nodejs-challenge/actions/workflows/ci.yml)
+
 Uma API REST simples para gerenciamento de tarefas, desenvolvida como desafio do curso Ignite da Rocketseat. Este projeto demonstra os fundamentos do Node.js, usando somente recursos internos do Node.js, incluindo criação de servidor HTTP, roteamento, manipulação de dados e testes end-to-end.
 
 ## 🚀 Funcionalidades
