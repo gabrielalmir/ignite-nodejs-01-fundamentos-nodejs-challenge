@@ -31,4 +31,12 @@ export class Task {
     this.completed_at = new Date();
     this.updated_at = new Date();
   }
+
+  json() {
+    return JSON.stringify(this);
+  }
+
+  parse(data) {
+    return data ? new Task(JSON.parse(data)) : null;
+  }
 }

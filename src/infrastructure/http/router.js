@@ -69,4 +69,8 @@ export class Router {
   delete(endpoint, handler) {
     this.add("DELETE", endpoint, handler);
   }
+
+  patch(endpoint, handler) {
+    this.add("PATCH", endpoint, handler);
+  }
 }

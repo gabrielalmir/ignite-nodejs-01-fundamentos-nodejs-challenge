@@ -1,3 +1,5 @@
+import { Task } from "../domain/task.js";
+
 export class TaskRepository {
   #db = null;
 
@@ -6,22 +8,28 @@ export class TaskRepository {
   }
 
   async create(task) {
-    await this.#db.put(task.id, JSON.stringify(task));
+    if (!(task instanceof Task)) {
+      throw new Error('Task must be an instance of Task class');
+    }
+    await this.#db.put(task.id, task.json());
     return task;
   }
 
   async findAll() {
     const allData = this.#db.listAll();
-    return allData.map((data) => JSON.parse(data));
+    return allData.map((data) => new Task(JSON.parse(data)));
   }
 
   async findById(id) {
     const data = this.#db.get(id);
-    return data ? JSON.parse(data) : null;
+    return data ? new Task(JSON.parse(data)) : null;
   }
 
   async update(task) {
-    await this.#db.put(task.id, JSON.stringify(task));
+    if (!(task instanceof Task)) {
+      throw new Error('Task must be an instance of Task class');
+    }
+    await this.#db.put(task.id, task.json());
     return task;
   }
 

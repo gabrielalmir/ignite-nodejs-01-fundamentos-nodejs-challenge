@@ -62,6 +62,34 @@ export async function main({ host, port }, cb) {
     res.json(task);
   });
 
+  app.delete("/tasks/:id", async (req, res) => {
+    const { id } = req.params;
+
+    const task = await taskService.findById(id);
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    await taskService.delete(id);
+    res.status(204).end();
+  });
+
+  app.patch("/tasks/:id/complete", async (req, res) => {
+    const { id } = req.params;
+
+    const task = await taskService.findById(id);
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    task.complete();
+
+    await taskService.update(task);
+    res.json(task);
+  });
+
   const server = http.createServer((req, res) => app.route(req, res));
   server.listen(port, host, cb);
 }

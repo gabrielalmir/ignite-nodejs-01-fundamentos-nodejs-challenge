@@ -315,4 +315,79 @@ describe('E2E Tests - Task API', () => {
       assert.strictEqual(data.error, 'Task not found');
     });
   });
+
+  describe('DELETE /tasks/:id', () => {
+    let createdTask;
+
+    beforeEach(async () => {
+      // Create a task to delete in tests
+      const response = await fetch(`${BASE_URL}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Task to delete', description: 'Will be deleted' })
+      });
+      createdTask = await response.json();
+    });
+
+    it('should delete a task successfully', async () => {
+      const deleteResponse = await fetch(`${BASE_URL}/tasks/${createdTask.id}`, {
+        method: 'DELETE'
+      });
+
+      assert.strictEqual(deleteResponse.status, 204);
+
+      // Verify the task was actually deleted
+      const getResponse = await fetch(`${BASE_URL}/tasks/${createdTask.id}`);
+      assert.strictEqual(getResponse.status, 404);
+    });
+
+    it('should return 404 if task does not exist', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/non-existent-id`, {
+        method: 'DELETE'
+      });
+
+      assert.strictEqual(response.status, 404);
+      const data = await response.json();
+      assert.strictEqual(data.error, 'Task not found');
+    });
+  });
+
+  describe('PATCH /tasks/:id/complete', () => {
+    let createdTask;
+
+    beforeEach(async () => {
+      // Create a task to complete in tests
+      const response = await fetch(`${BASE_URL}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Task to complete', description: 'Will be completed' })
+      });
+      createdTask = await response.json();
+    });
+
+    it('should mark a task as completed', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/${createdTask.id}/complete`, {
+        method: 'PATCH'
+      });
+
+      assert.strictEqual(response.status, 200);
+      const completedTask = await response.json();
+
+      assert.strictEqual(completedTask.id, createdTask.id);
+      assert.strictEqual(completedTask.title, createdTask.title);
+      assert.strictEqual(completedTask.description, createdTask.description);
+      assert.ok(completedTask.completed_at);
+      assert.ok(completedTask.updated_at);
+    });
+
+    it('should return 404 if task does not exist', async () => {
+      const response = await fetch(`${BASE_URL}/tasks/non-existent-id/complete`, {
+        method: 'PATCH'
+      });
+
+      assert.strictEqual(response.status, 404);
+      const data = await response.json();
+      assert.strictEqual(data.error, 'Task not found');
+    });
+  });
 });
