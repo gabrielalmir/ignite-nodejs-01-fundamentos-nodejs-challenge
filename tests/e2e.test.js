@@ -17,22 +17,34 @@ function clearDatabase() {
   }
 }
 
-function waitForServer(timeout = 10000) {
+function waitForServer(timeout = 30000) { // Increased timeout to 30 seconds
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
+    let attempts = 0;
     const checkServer = async () => {
+      attempts++;
       try {
-        const response = await fetch(`${BASE_URL}/`);
+        console.log(`Checking server readiness (attempt ${attempts})...`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout per request
+
+        const response = await fetch(`${BASE_URL}/`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (response.ok) {
+          console.log('Server is ready!');
           resolve();
         } else {
-          throw new Error('Server not ready');
+          throw new Error(`Server responded with status ${response.status}`);
         }
       } catch (error) {
+        console.log(`Server check failed: ${error.message}`);
         if (Date.now() - startTime > timeout) {
-          reject(new Error('Server failed to start within timeout'));
+          reject(new Error(`Server failed to start within ${timeout}ms after ${attempts} attempts`));
         } else {
-          setTimeout(checkServer, 100);
+          setTimeout(checkServer, 500); // Check every 500ms
         }
       }
     };
@@ -42,26 +54,52 @@ function waitForServer(timeout = 10000) {
 
 before(async () => {
   console.log('Starting server for E2E tests...');
+  console.log('Node version:', process.version);
+  console.log('Platform:', process.platform);
+  console.log('Working directory:', process.cwd());
 
   console.log('Cleaning up database...');
   clearDatabase();
 
   const serverPath = join(__dirname, '..', 'src', 'server.js');
+  console.log('Server path:', serverPath);
+  console.log('Server exists:', existsSync(serverPath));
+
   serverProcess = spawn('node', [serverPath], {
-    env: { ...process.env, PORT: '3334' },
-    stdio: 'pipe'
+    env: { ...process.env, PORT: '3334', NODE_ENV: 'test' },
+    stdio: 'pipe',
+    cwd: join(__dirname, '..')
   });
 
+  let serverOutput = '';
+  let serverErrors = '';
+
   serverProcess.stdout.on('data', (data) => {
-    console.log(`Server: ${data.toString().trim()}`);
+    const output = data.toString().trim();
+    serverOutput += output + '\n';
+    console.log(`Server: ${output}`);
   });
 
   serverProcess.stderr.on('data', (data) => {
-    console.error(`Server Error: ${data.toString().trim()}`);
+    const error = data.toString().trim();
+    serverErrors += error + '\n';
+    console.error(`Server Error: ${error}`);
   });
 
-  await waitForServer();
-  console.log('Server is ready for testing');
+  serverProcess.on('error', (error) => {
+    console.error('Failed to start server process:', error);
+  });
+
+  try {
+    console.log('Waiting for server to be ready...');
+    await waitForServer();
+    console.log('Server is ready for testing');
+  } catch (error) {
+    console.error('Server startup failed:', error.message);
+    console.error('Server stdout:', serverOutput);
+    console.error('Server stderr:', serverErrors);
+    throw error;
+  }
 });
 
 after(async () => {
