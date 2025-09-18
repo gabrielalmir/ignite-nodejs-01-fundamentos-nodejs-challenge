@@ -129,82 +129,138 @@ describe('E2E Tests - Task API', () => {
     });
   });
 
-  describe('POST /tasks', () => {
-    it('should create a new task', async () => {
-      const newTask = {
-        title: 'Test Task',
-        description: 'This is a test task'
-      };
+  describe('POST /tasks - CSV Import via Multipart', () => {
+    it('should import tasks from CSV file', async () => {
+      const csvContent = 'title,description\nTask CSV 1,Description 1\nTask CSV 2,Description 2';
+
+      // Create multipart form data
+      const boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
+      const body = [
+        `--${boundary}`,
+        'Content-Disposition: form-data; name="file"; filename="test.csv"',
+        'Content-Type: text/csv',
+        '',
+        csvContent,
+        `--${boundary}--`
+      ].join('\r\n');
 
       const response = await fetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
         },
-        body: JSON.stringify(newTask)
+        body: body
       });
 
       assert.strictEqual(response.status, 201);
-      assert.strictEqual(response.headers.get('content-type'), 'application/json');
+      const result = await response.json();
 
-      const createdTask = await response.json();
+      assert.ok(result.message.includes('Successfully imported'));
+      assert.ok(result.tasks);
+      assert.strictEqual(result.tasks.length, 2);
 
-      assert.ok(createdTask.id);
-      assert.strictEqual(createdTask.title, newTask.title);
-      assert.strictEqual(createdTask.description, newTask.description);
+      // Verify tasks were created
+      const listResponse = await fetch(`${BASE_URL}/tasks`);
+      const allTasks = await listResponse.json();
+
+      const csvTasks = allTasks.filter(task =>
+        task.title.includes('Task CSV')
+      );
+      assert.ok(csvTasks.length >= 2);
     });
 
-    it('should return 400 when title is missing', async () => {
-      const invalidTask = {
-        description: 'Task without title'
-      };
+    it('should return 400 for invalid CSV format', async () => {
+      const invalidCsv = 'invalid,csv\ncontent';
+
+      const boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
+      const body = [
+        `--${boundary}`,
+        'Content-Disposition: form-data; name="file"; filename="invalid.csv"',
+        'Content-Type: text/csv',
+        '',
+        invalidCsv,
+        `--${boundary}--`
+      ].join('\r\n');
 
       const response = await fetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
         },
-        body: JSON.stringify(invalidTask)
+        body: body
       });
 
       assert.strictEqual(response.status, 400);
-
-      const errorResponse = await response.json();
-      assert.strictEqual(errorResponse.error, 'Title and description are required');
+      const result = await response.json();
+      assert.strictEqual(result.error, 'Invalid CSV format or content');
     });
+  });
 
-    it('should return 400 when description is missing', async () => {
-      const invalidTask = {
-        title: 'Task without description'
-      };
+  describe('POST /tasks - CSV Import via Multipart', () => {
+    it('should import tasks from CSV file', async () => {
+      const csvContent = 'title,description\nTask CSV 1,Description 1\nTask CSV 2,Description 2';
+
+      // Create multipart form data
+      const boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
+      const body = [
+        `--${boundary}`,
+        'Content-Disposition: form-data; name="file"; filename="test.csv"',
+        'Content-Type: text/csv',
+        '',
+        csvContent,
+        `--${boundary}--`
+      ].join('\r\n');
 
       const response = await fetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
         },
-        body: JSON.stringify(invalidTask)
+        body: body
       });
 
-      assert.strictEqual(response.status, 400);
+      assert.strictEqual(response.status, 201);
+      const result = await response.json();
 
-      const errorResponse = await response.json();
-      assert.strictEqual(errorResponse.error, 'Title and description are required');
+      assert.ok(result.message.includes('Successfully imported'));
+      assert.ok(result.tasks);
+      assert.strictEqual(result.tasks.length, 2);
+
+      // Verify tasks were created
+      const listResponse = await fetch(`${BASE_URL}/tasks`);
+      const allTasks = await listResponse.json();
+
+      const csvTasks = allTasks.filter(task =>
+        task.title.includes('Task CSV')
+      );
+      assert.ok(csvTasks.length >= 2);
     });
 
-    it('should return 400 when both title and description are missing', async () => {
+    it('should return 400 for invalid CSV format', async () => {
+      const invalidCsv = 'invalid,csv\ncontent';
+
+      // say thanks to postman for this snippet
+      const boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
+      const body = [
+        `--${boundary}`,
+        'Content-Disposition: form-data; name="file"; filename="invalid.csv"',
+        'Content-Type: text/csv',
+        '',
+        invalidCsv,
+        `--${boundary}--`
+      ].join('\r\n');
+
       const response = await fetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
         },
-        body: JSON.stringify({})
+        body: body
       });
 
       assert.strictEqual(response.status, 400);
-
-      const errorResponse = await response.json();
-      assert.strictEqual(errorResponse.error, 'Title and description are required');
+      const result = await response.json();
+      assert.strictEqual(result.error, 'Invalid CSV format or content');
     });
   });
 

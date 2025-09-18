@@ -48,6 +48,32 @@ npm start
 
 O servidor será iniciado em `http://localhost:3333` (ou a porta definida na variável de ambiente `PORT`).
 
+## 📊 Importação de Tarefas via CSV
+
+Para importar tarefas em lote via arquivo CSV:
+
+1. Crie um arquivo CSV com o formato:
+```csv
+title,description
+Task 01,Descrição da Task 01
+Task 02,Descrição da Task 02
+Task 03,Descrição da Task 03
+```
+
+2. Execute o comando de importação:
+```bash
+npm run import [caminho-do-arquivo.csv]
+```
+
+Se nenhum caminho for especificado, o script usará `tasks.csv` do diretório raiz.
+
+**Exemplo:**
+```bash
+npm run import
+# ou
+npm run import ./meu-arquivo.csv
+```
+
 ## 🧪 Testes
 
 Execute os testes end-to-end:
@@ -70,25 +96,26 @@ Retorna o status da aplicação.
 ```
 
 ### POST /tasks
-Cria uma nova tarefa.
+Cria uma nova tarefa ou importa múltiplas tarefas via CSV.
 
-**Corpo da requisição:**
-```json
-{
-  "title": "Título da tarefa",
-  "description": "Descrição da tarefa"
-}
+**Criar tarefa única (JSON):**
+```bash
+curl -X POST http://localhost:3333/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Minha Tarefa", "description": "Descrição da tarefa"}'
+```
+
+**Importar via CSV (Multipart):**
+```bash
+curl -X POST http://localhost:3333/tasks \
+  -F "file=@tasks.csv"
 ```
 
 **Resposta (201):**
 ```json
 {
-  "id": "uuid",
-  "title": "Título da tarefa",
-  "description": "Descrição da tarefa",
-  "completed": false,
-  "createdAt": "2023-...",
-  "updatedAt": "2023-..."
+  "message": "Successfully imported 5 tasks from CSV",
+  "tasks": [...]
 }
 ```
 

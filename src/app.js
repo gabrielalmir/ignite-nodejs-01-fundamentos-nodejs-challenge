@@ -11,6 +11,40 @@ const db = new LunaDB();
 const taskRepository = new TaskRepository(db);
 const taskService = new TaskService(taskRepository);
 
+function parseCSVFromContent(csvContent) {
+  const lines = csvContent.trim().split('\n');
+  if (lines.length < 2) {
+    throw new Error('CSV must have at least a header and one data row');
+  }
+
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+  // Check if required headers exist
+  const titleIndex = headers.indexOf('title');
+  const descriptionIndex = headers.indexOf('description');
+
+  if (titleIndex === -1 || descriptionIndex === -1) {
+    throw new Error('CSV must have "title" and "description" columns');
+  }
+
+  const tasks = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim());
+    if (values.length >= headers.length) {
+      tasks.push({
+        title: values[titleIndex],
+        description: values[descriptionIndex]
+      });
+    }
+  }
+
+  if (tasks.length === 0) {
+    throw new Error('No valid tasks found in CSV');
+  }
+
+  return tasks;
+}
+
 export async function main({ host, port }, cb) {
   const app = new Router();
   await db.load();
@@ -20,8 +54,33 @@ export async function main({ host, port }, cb) {
   });
 
   app.post("/tasks", async (req, res) => {
-    const { title, description } = req.body;
+    const { file, title, description } = req.body;
 
+    // Check if it's a CSV file upload
+    if (file && file.filename && file.filename.endsWith('.csv')) {
+      try {
+        const csvContent = file.data.toString();
+        const tasks = parseCSVFromContent(csvContent);
+
+        const createdTasks = [];
+        for (const taskData of tasks) {
+          const task = Task.create(taskData);
+          await taskService.create(task);
+          createdTasks.push(task);
+        }
+
+        res.status(201).json({
+          message: `Successfully imported ${createdTasks.length} tasks from CSV`,
+          tasks: createdTasks
+        });
+        return;
+      } catch (error) {
+        res.status(400).json({ error: 'Invalid CSV format or content' });
+        return;
+      }
+    }
+
+    // Regular JSON task creation
     if (!title || !description) {
       res.status(400).json({ error: 'Title and description are required' });
       return;
